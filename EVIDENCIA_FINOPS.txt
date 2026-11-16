@@ -1,0 +1,22 @@
+test_base (test_modelo.FinOpsTest.test_base) ... ok
+test_calendar (test_modelo.FinOpsTest.test_calendar) ... ok
+test_cash (test_modelo.FinOpsTest.test_cash) ... ok
+test_productivity (test_modelo.FinOpsTest.test_productivity) ... ok
+test_rework (test_modelo.FinOpsTest.test_rework) ... ok
+test_routes (test_modelo.FinOpsTest.test_routes) ... ok
+test_seasonal (test_modelo.FinOpsTest.test_seasonal) ... ok
+test_storage (test_modelo.FinOpsTest.test_storage) ... ok
+test_validation (test_modelo.FinOpsTest.test_validation) ... ok
+test_workbook_inputs (test_modelo.FinOpsTest.test_workbook_inputs) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.024s
+
+OK
+
+Validacion de limpieza: 2026-11-16T13:53:01.859390
+Excel V4 SHA-256: 8703a9206374973c514304bc3dad8755657d8fb44ba01aeded7187c1783bb54e
+AppTest: tres perfiles, 9 graficas por perfil, 3 exportaciones, parametros y rec?lculo: OK.
+Resultados financieros antes/despues: sin cambios (motor e interfaz intactos).
+Payback sostenido: no existe indicador independiente.
+CONTRASTE_EXCEL.csv conserva el contraste historico y agrega resultados V4; no equivale a recalculo independiente del libro.
