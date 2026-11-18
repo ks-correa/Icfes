@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from dashboard_ui import aplicar_estilo, mostrar_grafica, mostrar_guia_metricas
-from modelo import P,INTS,evaluate,validate
+from modelo import P,INTS,PROFILES,evaluate,validate
 from lectura import read_profiles
 st.set_page_config(page_title='FinOps ICFES',page_icon='📊',layout='wide',initial_sidebar_state='expanded')
 aplicar_estilo()
@@ -19,12 +19,13 @@ st.caption('Propuesta de arquitectura empresarial · Simulación nominal a 36 me
 with st.sidebar:
     view=st.radio('Vista', ['Resultados', 'Parámetros'])
     st.header('Datos del escenario')
-    upload=st.file_uploader('Excel financiero V4 (opcional)',type=['xlsx'])
-    default_file=Path(__file__).parent/'Finanzas_ICFES_V4.xlsx'
+    upload=st.file_uploader('Modelo financiero actualizado (opcional)',type=['xlsx'])
+    default_file=Path(__file__).parent/'Finanzas_ICFES.xlsx'
     try:
-        data=upload.getvalue() if upload else default_file.read_bytes()
-        profiles=read_profiles(data);token=hashlib.sha256(data).hexdigest()[:12]
-        st.success('Entradas cargadas del Excel.')
+        data=upload.getvalue() if upload else (default_file.read_bytes() if default_file.exists() else None)
+        profiles=read_profiles(data) if data is not None else {k:v.copy() for k,v in PROFILES.items()}
+        token=hashlib.sha256(data).hexdigest()[:12] if data is not None else 'entrega-final'
+        st.success('Entradas cargadas del Excel.' if data is not None else 'Perfiles actualizados integrados. Carga el nuevo Excel para contrastar.')
     except Exception as e:
         st.error(f'No se pudo leer el Excel financiero: {e}');st.stop()
     scenario=st.radio('Perfil',list(profiles),index=1)
@@ -37,7 +38,7 @@ with st.sidebar:
         st.rerun()
 initial=profiles[scenario];state_key='fin_result_'+token+'_'+scenario
 if state_key not in st.session_state:st.session_state[state_key]=dict(initial)
-quick=['re','review','min_r','release','account_increment','trm','advanced','refresh','turnover','support','rds','dev']
+quick=['manual_re','re','review','min_r','peak','release','account_increment','shared_increment','trm','ocr_fraction','wa_marketing_n','wa_service_n','wa_auth_n','dev']
 params={}
 
 def widget(row):
@@ -79,6 +80,11 @@ cols=st.columns(4)
 for c,(label,v) in zip(cols,[('ROI económico',pct(r['roi'])),('ROI caja',pct(r['cash_roi'])),('Payback caja',pb(r['payback'])),('Personal residual',str(d['staff']))]):c.metric(label,v)
 cols=st.columns(3)
 for c,(label,v) in zip(cols,[('Inversión inicial',m(d['capex'])),('Ahorro económico',m(r['saving'])),('Payback económico',pb(r['payback_econ']))]):c.metric(label,v)
+st.caption('WhatsApp principal · correo complementario · portal web seguro.')
+cols=st.columns(4)
+for col,(label,v) in zip(cols,[('Techo de inversión',m(p['budget'])),('Margen frente al techo',m(r['budget_margin'])),('Payback caja sostenido',pb(r['payback_sustained'])),('Custodia posterior a 36m',m(r['custody_tail']))]):col.metric(label,v)
+if r['budget_ok']:st.success('Cumple el techo presupuestario bajo los supuestos seleccionados.')
+else:st.warning('No cumple el techo presupuestario bajo los supuestos seleccionados.')
 with st.expander('Metodología de indicadores'):
     st.markdown('TCO = inversión inicial + operación 36 meses. ROI comparativo = (manual − TCO) / TCO. Payback = primer mes en que el ahorro acumulado cubre la inversión; una caída posterior puede revertirlo. El ahorro de caja descuenta el personal que no se libera y contempla la absorción de costos por recursos existentes. No se imputa ingreso ni se aplican descuentos financieros.')
     st.write('ROI sobre inversión inicial (caja):',pct(r['investment_roi']),'· Payback económico:',pb(r['payback_econ']))
@@ -104,6 +110,9 @@ with t2:
     with a:mostrar_grafica(px.bar(cost_df,x='COP',y='Partida',orientation='h',title='Costo económico por partida'),horizontal=True)
     with b:mostrar_grafica(px.pie(cost_df,names='Partida',values='COP',hole=.45,title='Composición del TCO económico'))
     st.dataframe(pd.DataFrame([{'Partida':k,'COP':round(v,2)} for k,v in breakdown.items()]),hide_index=True,width='stretch')
+    st.subheader('Comparación operativa AS-IS / TO-BE')
+    for col,(label,val) in zip(st.columns(4),[('Cargas AS-IS',d['manual_loads']),('Cargas TO-BE',d['loads']),('Cargas evitadas',d['manual_loads']-d['loads']),('Cargas/h última semana',p['n']*p['last_share']*(1+p['re'])/(p['last_days']*p['hours']))]):col.metric(label,f'{val:,.0f}')
+    st.caption(f"AS-IS: 5 días hasta revisión, 5 minutos activos y 2 días hasta contacto. TO-BE: P95 ≤10 minutos automatizado, P95 ≤48 h excepción (metas). Reenvíos AS-IS informados: {p['wrong_initial']:.0%} × {p['wrong_resends']:g}; supuesto configurable {p['manual_re']:g}.")
     st.subheader('Demanda y procesamiento anual')
     for group in [[('Postulaciones',d['post']),('Cargas',d['loads']),('Archivos seguros',d['safe']),('RUT admitidos',d['admit'])],[('Ejecuciones OCR',d['ocr']),('Páginas OCR',d['pages']),('Evaluaciones fiscales',d['fiscal']),('Alertas 48',d['alerts'])]]:
         for col,(label,value) in zip(st.columns(4),group):col.metric(label,f'{value:,.0f}'.replace(',','.'))
@@ -111,6 +120,9 @@ with t2:
     services=pd.DataFrame([{'Servicio':name,'USD/año':d[k],'COP/año con recargo':d[k]*d['fx']} for k,name in [('lambda','Lambda'),('text','Textract texto'),('advanced','Textract avanzado adicional'),('api','API Gateway'),('step','Step Functions'),('sqs','SQS'),('sns','SNS'),('ses','SES'),('wa','WhatsApp'),('cognito','Cognito'),('s3_requests','Peticiones S3'),('kms','KMS'),('logs','CloudWatch ingestión'),('trail','CloudTrail'),('transfer','Transferencia'),('temp','S3 temporal')]])
     mostrar_grafica(px.bar(services.sort_values('COP/año con recargo',ascending=False),x='COP/año con recargo',y='Servicio',orientation='h',title='Consumo variable por servicio · año 1'),horizontal=True)
     st.dataframe(services,hide_index=True,width='stretch')
+    st.subheader('Comunicaciones · WhatsApp principal')
+    st.dataframe(pd.DataFrame([{'Categoría':label,'USD/año':d[k],'COP/año':d[k]*d['fx']} for k,label in [('wa_utility','Utilidad'),('wa_auth','Autenticación'),('wa_marketing','Marketing opcional'),('wa_service','Servicio facturable'),('wa','Total WhatsApp con BSP'),('ses','Correo complementario')]]),hide_index=True,width='stretch')
+    st.write('Quick Win incluido en inversión técnica:',cop(p['quickwin']))
     st.caption(f'Custodia al mes 36: {f.stock.iloc[-1]:,.1f} GB. Los costos posteriores a los 36 meses no están incluidos; la obligación de retención puede continuar.')
 with t3:
     st.subheader('Costos por recorrido')
@@ -118,9 +130,12 @@ with t3:
     mostrar_grafica(px.bar(routes,x='Costo marginal COP',y='Recorrido',orientation='h',title='Costo marginal por recorrido documental'),horizontal=True)
     st.dataframe(routes,hide_index=True,width='stretch')
     st.caption('Recorridos ilustrativos no sumables. Incluyen consumos y, donde corresponde, valor del tiempo humano y custodia durante toda la retención. Excluyen CapEx, fijos y autenticación por postulante. Los agregados se obtienen por población, no multiplicando todos los recorridos.')
-    c1,c2,c3=st.columns(3);c1.metric('Consumo variable por carga',f"$ {d['cost_load']:,.2f} COP");c2.metric('Consumo variable por postulante',f"$ {d['cost_post']:,.2f} COP");c3.metric('TCO económico por postulante',cop(r['econ']/(3*d['post'])))
+    c1,c2,c3,c4=st.columns(4);c4.metric('TCO caja por postulante',cop(r['cash']/(3*d['post'])));c1.metric('Consumo variable por carga',f"$ {d['cost_load']:,.2f} COP");c2.metric('Consumo variable por postulante',f"$ {d['cost_post']:,.2f} COP");c3.metric('TCO económico por postulante',cop(r['econ']/(3*d['post'])))
 with t4:
     st.subheader('Capacidad residual')
+    if d['staff_r']>p['review_min']:st.warning(f"Se requieren {d['staff_r']} revisores, por encima del objetivo de {p['review_min']}.")
+    else:st.success(f"Dotación objetivo de {p['review_min']} revisores suficiente bajo los supuestos agregados; validar colas en piloto.")
+    st.write('Riesgo evitado a tres años (sensibilidad):',cop(r['risk_avoided']),'· ROI ajustado:',pct(r['risk_roi']))
     st.dataframe(pd.DataFrame([{'Función':name,'Casos/ciclo':d['cases_'+k],'Personas mínimas':d['staff_'+k]} for k,name in [('r','Revisión'),('a','Atención'),('c','Contabilidad')]]),hide_index=True,width='stretch')
     st.write('Nómina económica anual:',cop(d['labor']),'· Nómina atribuible en caja:',cop(d['cash_labor']))
     st.write('Capacitación inicial total de referencia:',cop(d['train_initial_econ']),'· Incremental presupuestada:',cop(d['train_initial']),'· Recurrente anual:',cop(d['train_rec']))
@@ -136,5 +151,5 @@ with t4:
 with t5:
     st.download_button('Descargar flujo mensual CSV',f.to_csv(index=False).encode('utf-8-sig'),file_name='Flujo_ICFES.csv',mime='text/csv')
     st.download_button('Descargar parámetros CSV',pd.DataFrame([{'Clave':k,'Valor':v} for k,v in p.items()]).to_csv(index=False).encode('utf-8-sig'),file_name='Parametros_ICFES.csv',mime='text/csv')
-    st.download_button('Descargar Excel de entrada',data,file_name=upload.name if upload else default_file.name,mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    if data is not None:st.download_button('Descargar Excel de entrada',data,file_name=upload.name if upload else default_file.name,mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 mostrar_guia_metricas()
