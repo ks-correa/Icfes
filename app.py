@@ -25,7 +25,7 @@ with st.sidebar:
         data=upload.getvalue() if upload else (default_file.read_bytes() if default_file.exists() else None)
         profiles=read_profiles(data) if data is not None else {k:v.copy() for k,v in PROFILES.items()}
         token=hashlib.sha256(data).hexdigest()[:12] if data is not None else 'entrega-final'
-        st.success('Entradas cargadas del Excel.' if data is not None else 'Perfiles actualizados integrados. Carga el nuevo Excel para contrastar.')
+        st.success(f'Entradas cargadas de {upload.name if upload else default_file.name}.' if data is not None else 'Perfiles actualizados integrados. Carga el nuevo Excel para contrastar.')
     except Exception as e:
         st.error(f'No se pudo leer el Excel financiero: {e}');st.stop()
     scenario=st.radio('Perfil',list(profiles),index=1)
