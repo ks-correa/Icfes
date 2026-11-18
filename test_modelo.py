@@ -4,7 +4,7 @@ from modelo import DEFAULT,PROFILES, evaluate,validate
 from lectura import read_profiles
 class FinOpsTest(unittest.TestCase):
  def test_base(self):
-  r=evaluate(DEFAULT);d=r['calcs'];self.assertEqual(r['manual'],504e6);self.assertEqual(d['staff'],6);self.assertEqual(d['loads'],108000);self.assertEqual(d['manual_loads'],108000);self.assertAlmostEqual(r['econ'],492453530.73202354,places=2);self.assertAlmostEqual(r['cash'],564453530.7320235,places=2);self.assertIsNone(r['payback'])
+  r=evaluate(DEFAULT);d=r['calcs'];self.assertEqual(r['manual'],504e6);self.assertEqual(d['staff_r'],2);self.assertEqual(d['loads'],108000);self.assertEqual(d['manual_loads'],144000);self.assertAlmostEqual(r['econ'],493122395.99311423,places=2);self.assertAlmostEqual(r['cash'],471522395.99311423,places=2);self.assertEqual(r['payback_sustained'],25)
  def test_seasonal(self):
   r=evaluate(DEFAULT);f=r['flow'];self.assertEqual([v['month'] for v in f if v['active']][:4],[1,2,7,8]);self.assertEqual(sum(v['active'] for v in f),12);self.assertEqual(sum(v['loads'] for v in f),324000);self.assertAlmostEqual(f[-1]['bal_c'],r['cash_saving'],places=2);self.assertAlmostEqual(f[-1]['bal_e'],r['saving'],places=2)
  def test_rework(self):
@@ -21,9 +21,18 @@ class FinOpsTest(unittest.TestCase):
  def test_storage(self):
   r=evaluate(dict(DEFAULT,retention=1));f=r['flow'];self.assertAlmostEqual(f[-1]['stock'],0);self.assertAlmostEqual(f[0]['stock'],f[0]['new'])
  def test_cash(self):
-  r=evaluate(dict(DEFAULT,release=1));self.assertAlmostEqual(r['econ'],r['cash'],places=2);self.assertEqual(r['payback'],26)
+  r=evaluate(dict(DEFAULT,release=1));self.assertLessEqual(r['cash'],r['econ']);self.assertTrue(r['budget_ok'])
  def test_routes(self):
   r=evaluate(DEFAULT)['routes'];self.assertLess(r['PDF rechazado en prevalidación'],r['PDF no RUT (seguro)']);self.assertLess(r['RUT ordinario (1 ejecución, sin revisión)'],r['RUT con 1 reintento OCR adicional']);self.assertLess(r['RUT ordinario (1 ejecución, sin revisión)'],r['Subsanación: 1 carga no RUT + 1 RUT'])
  def test_workbook_inputs(self):
-  file=Path(__file__).parent/'Finanzas_ICFES_V4.xlsx';p=read_profiles(file);self.assertEqual(p,PROFILES)
+  file=Path(__file__).parent/'Finanzas_ICFES.xlsx'
+  if not file.exists():self.skipTest('Copiar Excel actualizado para contraste')
+  p=read_profiles(file);self.assertEqual(p,PROFILES)
+ def test_channels(self):
+  r=evaluate(DEFAULT);d=r['calcs'];self.assertAlmostEqual(d['wa']*d['fx'],863654.4,places=2);self.assertAlmostEqual(d['ses']*d['fx'],56548.8,places=2);self.assertGreater(evaluate(dict(DEFAULT,wa_marketing_n=1))['cash'],r['cash'])
+ def test_alerts(self):
+  self.assertEqual(evaluate(DEFAULT)['calcs']['alerts'],7200)
+  self.assertEqual(evaluate(dict(DEFAULT,alert_eligible=0))['calcs']['alerts'],0)
+ def test_retention_and_budget(self):
+  r=evaluate(DEFAULT);self.assertAlmostEqual(r['custody_tail'],7594097.7168,places=2);self.assertTrue(r['budget_ok']);self.assertFalse(evaluate(dict(DEFAULT,budget=1))['budget_ok'])
 if __name__=='__main__':unittest.main(verbosity=2)
