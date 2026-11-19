@@ -78,8 +78,8 @@ cols=st.columns(4)
 for c,(label,v) in zip(cols,[('TCO manual',m(r['manual'])),('TCO económico',m(r['econ'])),('TCO de caja',m(r['cash'])),('Ahorro efectivo',m(r['cash_saving']))]):c.metric(label,v)
 cols=st.columns(4)
 for c,(label,v) in zip(cols,[('ROI económico',pct(r['roi'])),('ROI caja',pct(r['cash_roi'])),('Payback caja',pb(r['payback'])),('Personal residual',str(d['staff']))]):c.metric(label,v)
-cols=st.columns(3)
-for c,(label,v) in zip(cols,[('Inversión inicial',m(d['capex'])),('Ahorro económico',m(r['saving'])),('Payback económico',pb(r['payback_econ']))]):c.metric(label,v)
+cols=st.columns(4)
+for c,(label,v) in zip(cols,[('Inversión inicial económica',m(d['capex_econ'])),('Inversión inicial caja',m(d['capex'])),('Ahorro económico',m(r['saving'])),('Payback económico',pb(r['payback_econ']))]):c.metric(label,v)
 st.caption('WhatsApp principal · correo complementario · portal web seguro.')
 cols=st.columns(4)
 for col,(label,v) in zip(cols,[('Techo de inversión',m(p['budget'])),('Margen frente al techo',m(r['budget_margin'])),('Payback caja sostenido',pb(r['payback_sustained'])),('Custodia posterior a 36m',m(r['custody_tail']))]):col.metric(label,v)
@@ -92,8 +92,8 @@ with st.expander('Metodología de indicadores'):
 t1,t2,t3,t4,t5=st.tabs(['Recuperación y TCO','Costos y consumo','Recorridos documentales','Personal y escenarios','Exportación'])
 with t1:
     st.subheader('Recuperación acumulada')
-    chart=pd.concat([pd.DataFrame([{'month':0,'bal_e':-d['capex'],'bal_c':-d['capex']}]),f[['month','bal_e','bal_c']]],ignore_index=True).rename(columns={'month':'Mes','bal_e':'Económico','bal_c':'Caja'}).set_index('Mes')
-    cumulative=pd.DataFrame({'Mes':[0]+f.month.tolist(),'Manual':[0]+f.manual.cumsum().tolist(),'Económico':[d['capex']]+(d['capex']+f.econ.cumsum()).tolist(),'Caja':[d['capex']]+(d['capex']+f.cash.cumsum()).tolist()})
+    chart=pd.concat([pd.DataFrame([{'month':0,'bal_e':-d['capex_econ'],'bal_c':-d['capex']}]),f[['month','bal_e','bal_c']]],ignore_index=True).rename(columns={'month':'Mes','bal_e':'Económico','bal_c':'Caja'}).set_index('Mes')
+    cumulative=pd.DataFrame({'Mes':[0]+f.month.tolist(),'Manual':[0]+f.manual.cumsum().tolist(),'Económico':[d['capex_econ']]+(d['capex_econ']+f.econ.cumsum()).tolist(),'Caja':[d['capex']]+(d['capex']+f.cash.cumsum()).tolist()})
     mostrar_grafica(px.line(cumulative,x='Mes',y=['Manual','Económico','Caja'],title='Costo total acumulado',color_discrete_map={'Manual':'#64748b','Económico':'#2563eb','Caja':'#d97706'}))
     fig=px.line(chart.reset_index(),x='Mes',y=['Económico','Caja'],title='Curva de recuperación de la inversión',color_discrete_map={'Económico':'#2563eb','Caja':'#d97706'})
     fig.add_hline(y=0,line_dash='dash',line_color='#64748b')
@@ -104,7 +104,7 @@ with t1:
         st.dataframe(f.rename(columns={'month':'Mes','active':'Convocatoria activa','loads':'Cargas','stock':'GB custodiados','manual':'Manual','econ':'OpEx económico','cash':'OpEx caja','bal_e':'Acumulado económico','bal_c':'Acumulado caja'})[['Mes','Convocatoria activa','Cargas','GB custodiados','Manual','OpEx económico','OpEx caja','Acumulado económico','Acumulado caja']],hide_index=True,width='stretch')
 with t2:
     st.subheader('Desglose económico del horizonte')
-    breakdown={'Inversión inicial':d['capex'],'Nómina residual':f.labor.sum(),'Fijos cloud y soporte humano':f.fixed.sum(),'Variables y capacidad caliente':f.variable.sum(),'Custodia acumulada':f.storage.sum(),'Capacitación recurrente':f.training.sum()}
+    breakdown={'Inversión inicial económica':d['capex_econ'],'Nómina residual':f.labor.sum(),'Fijos cloud y soporte humano':f.fixed.sum(),'Variables y capacidad caliente':f.variable.sum(),'Custodia acumulada':f.storage.sum(),'Capacitación recurrente':f.training.sum()}
     cost_df=pd.DataFrame({'Partida':list(breakdown),'COP':list(breakdown.values())})
     a,b=st.columns([3,2])
     with a:mostrar_grafica(px.bar(cost_df,x='COP',y='Partida',orientation='h',title='Costo económico por partida'),horizontal=True)
@@ -143,7 +143,7 @@ with t4:
     st.caption('El perfil seleccionado refleja los ajustes aplicados; los otros dos muestran sus valores originales del Excel.')
     comp=[]
     for name,profile in profiles.items():
-        e=evaluate(p if name==scenario else profile);comp.append({'Perfil':name,'Manual':e['manual'],'TCO económico':e['econ'],'TCO caja':e['cash'],'Ahorro caja':e['cash_saving'],'ROI caja':pct(e['cash_roi']),'Payback':pb(e['payback'])})
+        e=evaluate(p if name==scenario else profile);comp.append({'Perfil':name,'Manual':e['manual'],'TCO económico':e['econ'],'TCO caja':e['cash'],'Ahorro caja':e['cash_saving'],'ROI caja':pct(e['cash_roi']),'Payback caja inicial':pb(e['payback']),'Payback caja sostenido':pb(e['payback_sustained'])})
     st.dataframe(pd.DataFrame(comp),hide_index=True,width='stretch')
     mostrar_grafica(px.bar(pd.DataFrame(comp),x='Perfil',y=['Manual','TCO económico','TCO caja'],barmode='group',title='Comparación de escenarios a 36 meses'))
     mostrar_grafica(px.bar(pd.DataFrame({'Función':['Validación / revisión','Atención','Contabilidad*'],'As-Is':[p['manual_v'],p['manual_a'],0],'To-Be':[d['staff_r'],d['staff_a'],d['staff_c']]}),x='Función',y=['As-Is','To-Be'],barmode='group',title='Dotación por función'),tipo='personas')
