@@ -1,1 +1,32 @@
-PENDIENTE DE EJECUCIÓN C06. La evidencia histórica no corresponde al Excel definitivo. Ejecutar python validar_finops.py después de reemplazar Finanzas_ICFES.xlsx. No se certifican pruebas hasta obtener resultados ejecutados.
+Fecha UTC: 2026-11-19T03:34:32.436165+00:00
+Excel SHA-256: ce9727b029393742ad006b9bbca26115d7bdd1989c41bc4a961e5747935c8df3
+modelo.py SHA-256: 87f2692286af5ca5b298da8c3c7886fcd994c0e62e51503a9b0773f739c8e678
+app.py SHA-256: 858bae67d8141893dbc58d8b2237ef1f1d49377f46ccfb12b54864c4f75d18d1
+Contraste: fórmulas calculadas y guardadas en el libro frente a evaluación Python; no solo entradas.
+
+test_alerts (test_modelo.FinOpsTest.test_alerts) ... ok
+test_base (test_modelo.FinOpsTest.test_base) ... ok
+test_calendar (test_modelo.FinOpsTest.test_calendar) ... ok
+test_capex_economic_and_cash (test_modelo.FinOpsTest.test_capex_economic_and_cash) ... ok
+test_cash (test_modelo.FinOpsTest.test_cash) ... ok
+test_channels (test_modelo.FinOpsTest.test_channels) ... ok
+test_productivity (test_modelo.FinOpsTest.test_productivity) ... ok
+test_retention_and_budget (test_modelo.FinOpsTest.test_retention_and_budget) ... ok
+test_rework (test_modelo.FinOpsTest.test_rework) ... ok
+test_routes (test_modelo.FinOpsTest.test_routes) ... ok
+test_seasonal (test_modelo.FinOpsTest.test_seasonal) ... ok
+test_storage (test_modelo.FinOpsTest.test_storage) ... ok
+test_validation (test_modelo.FinOpsTest.test_validation) ... ok
+test_workbook_inputs (test_modelo.FinOpsTest.test_workbook_inputs) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.032s
+
+OK
+
+Contraste Excel-Python: 2046/2046 coincidencias; 0 diferencias.
+AppTest perfil Optimista: OK, 32 indicadores.
+AppTest perfil Base: OK, 32 indicadores.
+AppTest perfil Pesimista: OK, 32 indicadores.
+AppTest vista Parámetros: OK.
+RESULTADO: APROBADO
