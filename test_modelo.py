@@ -4,7 +4,7 @@ from modelo import DEFAULT,PROFILES, evaluate,validate
 from lectura import read_profiles
 class FinOpsTest(unittest.TestCase):
  def test_base(self):
-  r=evaluate(DEFAULT);d=r['calcs'];self.assertEqual(r['manual'],504e6);self.assertEqual(d['staff_r'],2);self.assertEqual(d['loads'],108000);self.assertEqual(d['manual_loads'],144000);self.assertAlmostEqual(r['econ'],493122395.99311423,places=2);self.assertAlmostEqual(r['cash'],471522395.99311423,places=2);self.assertEqual(r['payback_sustained'],25)
+  r=evaluate(DEFAULT);d=r['calcs'];self.assertEqual(r['manual'],504e6);self.assertEqual(d['staff_r'],2);self.assertEqual(d['loads'],108000);self.assertEqual(d['manual_loads'],144000);self.assertAlmostEqual(r['econ'],493404583.49311423,places=2);self.assertAlmostEqual(r['cash'],471522395.99311423,places=2);self.assertEqual(r['payback_sustained'],25)
  def test_seasonal(self):
   r=evaluate(DEFAULT);f=r['flow'];self.assertEqual([v['month'] for v in f if v['active']][:4],[1,2,7,8]);self.assertEqual(sum(v['active'] for v in f),12);self.assertEqual(sum(v['loads'] for v in f),324000);self.assertAlmostEqual(f[-1]['bal_c'],r['cash_saving'],places=2);self.assertAlmostEqual(f[-1]['bal_e'],r['saving'],places=2)
  def test_rework(self):
@@ -35,4 +35,12 @@ class FinOpsTest(unittest.TestCase):
   self.assertEqual(evaluate(dict(DEFAULT,alert_eligible=0))['calcs']['alerts'],0)
  def test_retention_and_budget(self):
   r=evaluate(DEFAULT);self.assertAlmostEqual(r['custody_tail'],7594097.7168,places=2);self.assertTrue(r['budget_ok']);self.assertFalse(evaluate(dict(DEFAULT,budget=1))['budget_ok'])
+ def test_capex_economic_and_cash(self):
+  for name,p in PROFILES.items():
+   with self.subTest(profile=name):
+    r=evaluate(p);d=r['calcs'];self.assertAlmostEqual(d['capex_econ']-d['capex'],d['train_initial_econ']-d['train_initial'],places=2)
+    self.assertAlmostEqual(r['flow'][-1]['bal_e'],r['saving'],places=2)
+    self.assertAlmostEqual(r['flow'][-1]['bal_c'],r['cash_saving'],places=2)
+  self.assertAlmostEqual(evaluate(DEFAULT)['calcs']['capex_econ'],82926250,places=2)
+  self.assertEqual(evaluate(PROFILES['Optimista'])['payback_econ_sustained'],13)
 if __name__=='__main__':unittest.main(verbosity=2)
