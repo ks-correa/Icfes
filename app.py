@@ -3,7 +3,7 @@ import hashlib
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from dashboard_ui import aplicar_estilo, mostrar_grafica, mostrar_guia_metricas
+from dashboard_ui import aplicar_estilo, mostrar_grafica, mostrar_guia_metricas, mostrar_tabla
 from modelo import P,INTS,PROFILES,evaluate,validate
 from lectura import read_profiles
 st.set_page_config(page_title='FinOps ICFES',page_icon='📊',layout='wide',initial_sidebar_state='expanded')
@@ -74,12 +74,32 @@ if view=='Parámetros':
     st.stop()
 p=st.session_state[state_key];r=evaluate(p);d=r['calcs'];f=pd.DataFrame(r['flow']);
 st.subheader(f'Escenario {scenario} · Resultados a tres años')
-cols=st.columns(4)
-for c,(label,v) in zip(cols,[('TCO manual',m(r['manual'])),('TCO económico',m(r['econ'])),('TCO de caja',m(r['cash'])),('Ahorro efectivo',m(r['cash_saving']))]):c.metric(label,v)
-cols=st.columns(4)
-for c,(label,v) in zip(cols,[('ROI económico',pct(r['roi'])),('ROI caja',pct(r['cash_roi'])),('Payback caja',pb(r['payback'])),('Personal residual',str(d['staff']))]):c.metric(label,v)
-cols=st.columns(4)
-for c,(label,v) in zip(cols,[('Inversión inicial económica',m(d['capex_econ'])),('Inversión inicial caja',m(d['capex'])),('Ahorro económico',m(r['saving'])),('Payback económico',pb(r['payback_econ']))]):c.metric(label,v)
+st.caption('Indicadores principales · base económica · horizonte de 36 meses · valores en millones de COP')
+primary = [
+    ('CAPEX', m(d['capex_econ']), 'Inversión inicial para desarrollar e implementar la solución.',
+     'Desarrollo, arquitectura, QA y despliegue con contingencia, más capacitación inicial. Quick Win ya incluido.'),
+    ('OPEX · 36 meses', m(f.econ.sum()), 'Gastos acumulados de operación durante 36 meses.',
+     'Suma del flujo mensual económico: personal residual, cloud, soporte, consumo, custodia y capacitación recurrente.'),
+    ('TCO · 36 meses', m(r['econ']), 'Costo total de la solución: CAPEX + OPEX.',
+     'Incluye inversión inicial y operación económica durante los 36 meses. Excluye custodia posterior al horizonte.'),
+    ('ROI comparativo', pct(r['roi']), 'Retorno por ahorro frente al proceso manual.',
+     '(TCO manual − TCO económico) / TCO económico. Puede ser negativo si la solución cuesta más que el proceso manual.'),
+]
+for col, (label, value, description, detail) in zip(st.columns(4), primary):
+    with col.container(border=True):
+        st.metric(label, value, help=detail)
+        st.caption(description)
+st.caption(f"Referencia manual: {m(r['manual'])} · Ahorro económico: {m(r['saving'])} · Recuperación económica: {pb(r['payback_econ'])}.")
+with st.expander('Indicadores de caja y capacidad operativa'):
+    for col, (label, value) in zip(st.columns(4), [
+        ('CAPEX de caja', m(d['capex'])), ('OPEX de caja · 36 meses', m(f.cash.sum())),
+        ('TCO de caja', m(r['cash'])), ('ROI de caja', pct(r['cash_roi']))]):
+        col.metric(label, value)
+    for col, (label, value) in zip(st.columns(3), [
+        ('Ahorro efectivo', m(r['cash_saving'])), ('Payback caja', pb(r['payback'])),
+        ('Personal residual', str(d['staff']))]):
+        col.metric(label, value)
+    st.caption('La base económica valora los recursos utilizados; la caja refleja los desembolsos atribuibles y el ahorro laboral efectivamente realizado.')
 st.caption('WhatsApp principal · correo complementario · portal web seguro.')
 cols=st.columns(4)
 for col,(label,v) in zip(cols,[('Techo de inversión',m(p['budget'])),('Margen frente al techo',m(r['budget_margin'])),('Payback caja sostenido',pb(r['payback_sustained'])),('Custodia posterior a 36m',m(r['custody_tail']))]):col.metric(label,v)
@@ -101,15 +121,16 @@ with t1:
     mostrar_grafica(px.bar(pd.DataFrame({'Alternativa':['Manual','Económico','Caja'],'TCO':[r['manual'],r['econ'],r['cash']]}),x='Alternativa',y='TCO',color='Alternativa',title='TCO a 36 meses',color_discrete_sequence=['#64748b','#2563eb','#d97706']))
     st.caption('Mes 0: inversión inicial. Se cargan nómina y demanda durante los meses de convocatoria, mientras la infraestructura fija se mantiene 12 meses/año.')
     with st.expander('Ver detalle mensual'):
-        st.dataframe(f.rename(columns={'month':'Mes','active':'Convocatoria activa','loads':'Cargas','stock':'GB custodiados','manual':'Manual','econ':'OpEx económico','cash':'OpEx caja','bal_e':'Acumulado económico','bal_c':'Acumulado caja'})[['Mes','Convocatoria activa','Cargas','GB custodiados','Manual','OpEx económico','OpEx caja','Acumulado económico','Acumulado caja']],hide_index=True,width='stretch')
+        mostrar_tabla(f.rename(columns={'month':'Mes','active':'Convocatoria activa','loads':'Cargas','stock':'GB custodiados','manual':'Manual','econ':'OpEx económico','cash':'OpEx caja','bal_e':'Acumulado económico','bal_c':'Acumulado caja'})[['Mes','Convocatoria activa','Cargas','GB custodiados','Manual','OpEx económico','OpEx caja','Acumulado económico','Acumulado caja']],hide_index=True,width='stretch')
 with t2:
     st.subheader('Desglose económico del horizonte')
     breakdown={'Inversión inicial económica':d['capex_econ'],'Nómina residual':f.labor.sum(),'Fijos cloud y soporte humano':f.fixed.sum(),'Variables y capacidad caliente':f.variable.sum(),'Custodia acumulada':f.storage.sum(),'Capacitación recurrente':f.training.sum()}
     cost_df=pd.DataFrame({'Partida':list(breakdown),'COP':list(breakdown.values())})
+    st.caption('Pasa el cursor por cualquier punto de la fila dentro de la gráfica para consultar el valor, incluso cuando la barra sea pequeña o cero.')
     a,b=st.columns([3,2])
     with a:mostrar_grafica(px.bar(cost_df,x='COP',y='Partida',orientation='h',title='Costo económico por partida'),horizontal=True)
     with b:mostrar_grafica(px.pie(cost_df,names='Partida',values='COP',hole=.45,title='Composición del TCO económico'))
-    st.dataframe(pd.DataFrame([{'Partida':k,'COP':round(v,2)} for k,v in breakdown.items()]),hide_index=True,width='stretch')
+    mostrar_tabla(pd.DataFrame([{'Partida':k,'COP':round(v,2)} for k,v in breakdown.items()]),hide_index=True,width='stretch')
     st.subheader('Comparación operativa AS-IS / TO-BE')
     for col,(label,val) in zip(st.columns(4),[('Cargas AS-IS',d['manual_loads']),('Cargas TO-BE',d['loads']),('Cargas evitadas',d['manual_loads']-d['loads']),('Cargas/h última semana',p['n']*p['last_share']*(1+p['re'])/(p['last_days']*p['hours']))]):col.metric(label,f'{val:,.0f}')
     st.caption(f"AS-IS: 5 días hasta revisión, 5 minutos activos y 2 días hasta contacto. TO-BE: P95 ≤10 minutos automatizado, P95 ≤48 h excepción (metas). Reenvíos AS-IS informados: {p['wrong_initial']:.0%} × {p['wrong_resends']:g}; supuesto configurable {p['manual_re']:g}.")
@@ -119,16 +140,16 @@ with t2:
     st.caption(f"Rondas de aviso: {d['notices']:,.0f} · Lambda: {d['lambda_gbs']:,.0f} GB-s / {d['lambda_calls']:,.0f} invocaciones.")
     services=pd.DataFrame([{'Servicio':name,'USD/año':d[k],'COP/año con recargo':d[k]*d['fx']} for k,name in [('lambda','Lambda'),('text','Textract texto'),('advanced','Textract avanzado adicional'),('api','API Gateway'),('step','Step Functions'),('sqs','SQS'),('sns','SNS'),('ses','SES'),('wa','WhatsApp'),('cognito','Cognito'),('s3_requests','Peticiones S3'),('kms','KMS'),('logs','CloudWatch ingestión'),('trail','CloudTrail'),('transfer','Transferencia'),('temp','S3 temporal')]])
     mostrar_grafica(px.bar(services.sort_values('COP/año con recargo',ascending=False),x='COP/año con recargo',y='Servicio',orientation='h',title='Consumo variable por servicio · año 1'),horizontal=True)
-    st.dataframe(services,hide_index=True,width='stretch')
+    mostrar_tabla(services,hide_index=True,width='stretch')
     st.subheader('Comunicaciones · WhatsApp principal')
-    st.dataframe(pd.DataFrame([{'Categoría':label,'USD/año':d[k],'COP/año':d[k]*d['fx']} for k,label in [('wa_utility','Utilidad'),('wa_auth','Autenticación'),('wa_marketing','Marketing opcional'),('wa_service','Servicio facturable'),('wa','Total WhatsApp con BSP'),('ses','Correo complementario')]]),hide_index=True,width='stretch')
+    mostrar_tabla(pd.DataFrame([{'Categoría':label,'USD/año':d[k],'COP/año':d[k]*d['fx']} for k,label in [('wa_utility','Utilidad'),('wa_auth','Autenticación'),('wa_marketing','Marketing opcional'),('wa_service','Servicio facturable'),('wa','Total WhatsApp con BSP'),('ses','Correo complementario')]]),hide_index=True,width='stretch')
     st.write('Quick Win incluido en inversión técnica:',cop(p['quickwin']))
     st.caption(f'Custodia al mes 36: {f.stock.iloc[-1]:,.1f} GB. Los costos posteriores a los 36 meses no están incluidos; la obligación de retención puede continuar.')
 with t3:
     st.subheader('Costos por recorrido')
     routes=pd.DataFrame([{'Recorrido':k,'Costo marginal COP':v} for k,v in r['routes'].items()])
     mostrar_grafica(px.bar(routes,x='Costo marginal COP',y='Recorrido',orientation='h',title='Costo marginal por recorrido documental'),horizontal=True)
-    st.dataframe(routes,hide_index=True,width='stretch')
+    mostrar_tabla(routes,hide_index=True,width='stretch')
     st.caption('Recorridos ilustrativos no sumables. Incluyen consumos y, donde corresponde, valor del tiempo humano y custodia durante toda la retención. Excluyen CapEx, fijos y autenticación por postulante. Los agregados se obtienen por población, no multiplicando todos los recorridos.')
     c1,c2,c3,c4=st.columns(4);c4.metric('TCO caja por postulante',cop(r['cash']/(3*d['post'])));c1.metric('Consumo variable por carga',f"$ {d['cost_load']:,.2f} COP");c2.metric('Consumo variable por postulante',f"$ {d['cost_post']:,.2f} COP");c3.metric('TCO económico por postulante',cop(r['econ']/(3*d['post'])))
 with t4:
@@ -136,7 +157,7 @@ with t4:
     if d['staff_r']>p['review_min']:st.warning(f"Se requieren {d['staff_r']} revisores, por encima del objetivo de {p['review_min']}.")
     else:st.success(f"Dotación objetivo de {p['review_min']} revisores suficiente bajo los supuestos agregados; validar colas en piloto.")
     st.write('Riesgo evitado a tres años (sensibilidad):',cop(r['risk_avoided']),'· ROI ajustado:',pct(r['risk_roi']))
-    st.dataframe(pd.DataFrame([{'Función':name,'Casos/ciclo':d['cases_'+k],'Personas mínimas':d['staff_'+k]} for k,name in [('r','Revisión'),('a','Atención'),('c','Contabilidad')]]),hide_index=True,width='stretch')
+    mostrar_tabla(pd.DataFrame([{'Función':name,'Casos/ciclo':d['cases_'+k],'Personas mínimas':d['staff_'+k]} for k,name in [('r','Revisión'),('a','Atención'),('c','Contabilidad')]]),hide_index=True,width='stretch')
     st.write('Nómina económica anual:',cop(d['labor']),'· Nómina atribuible en caja:',cop(d['cash_labor']))
     st.write('Capacitación inicial total de referencia:',cop(d['train_initial_econ']),'· Incremental presupuestada:',cop(d['train_initial']),'· Recurrente anual:',cop(d['train_rec']))
     st.subheader('Comparación de perfiles')
@@ -144,7 +165,7 @@ with t4:
     comp=[]
     for name,profile in profiles.items():
         e=evaluate(p if name==scenario else profile);comp.append({'Perfil':name,'Manual':e['manual'],'TCO económico':e['econ'],'TCO caja':e['cash'],'Ahorro caja':e['cash_saving'],'ROI caja':pct(e['cash_roi']),'Payback caja inicial':pb(e['payback']),'Payback caja sostenido':pb(e['payback_sustained'])})
-    st.dataframe(pd.DataFrame(comp),hide_index=True,width='stretch')
+    mostrar_tabla(pd.DataFrame(comp),hide_index=True,width='stretch')
     mostrar_grafica(px.bar(pd.DataFrame(comp),x='Perfil',y=['Manual','TCO económico','TCO caja'],barmode='group',title='Comparación de escenarios a 36 meses'))
     mostrar_grafica(px.bar(pd.DataFrame({'Función':['Validación / revisión','Atención','Contabilidad*'],'As-Is':[p['manual_v'],p['manual_a'],0],'To-Be':[d['staff_r'],d['staff_a'],d['staff_c']]}),x='Función',y=['As-Is','To-Be'],barmode='group',title='Dotación por función'),tipo='personas')
     st.caption('*El personal contable no está incluido en la línea base laboral del pliego; cero no significa que el operador carezca de Contabilidad.')

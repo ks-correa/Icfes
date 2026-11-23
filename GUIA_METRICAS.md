@@ -1,5 +1,14 @@
 # Guía de métricas
 
+Los indicadores principales usan la misma base económica a 36 meses, en millones de COP:
+
+- **CAPEX:** desarrollo, arquitectura, QA y despliegue con contingencia, más capacitación inicial económica. Quick Win ya incluido. Es la inversión inicial del modelo, sin implicar una clasificación contable de capitalización.
+- **OPEX:** suma de los 36 flujos mensuales económicos: personal, cloud, soporte, consumo, custodia y capacitación recurrente, con estacionalidad y crecimiento configurados.
+- **TCO:** CAPEX + OPEX; excluye custodia posterior al mes 36.
+- **ROI:** (TCO manual − TCO económico) / TCO económico. No corresponde al ahorro dividido por CAPEX.
+
+En las barras horizontales, pasa por la fila dentro del área de trazado para ver el valor completo sin apuntar a la barra pequeña. Las tablas usan texto HTML para mejorar la legibilidad.
+
 - TCO económico: inversión y recursos utilizados; TCO caja: desembolsos atribuibles, incluyendo ahorro laboral no realizado y gastos incrementales.
 - ROI comparativo: (TCO manual - TCO propuesta) / TCO propuesta. ROI de inversión inicial: ahorro neto / CapEx.
 - Payback inicial: primer saldo acumulado no negativo; sostenido: primer mes que permanece no negativo hasta 36.
