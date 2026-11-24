@@ -25,11 +25,10 @@ with st.sidebar:
         data=upload.getvalue() if upload else (default_file.read_bytes() if default_file.exists() else None)
         profiles=read_profiles(data) if data is not None else {k:v.copy() for k,v in PROFILES.items()}
         token=hashlib.sha256(data).hexdigest()[:12] if data is not None else 'entrega-final'
-        st.success(f'Entradas cargadas de {upload.name if upload else default_file.name}.' if data is not None else 'Perfiles actualizados integrados. Carga el nuevo Excel para contrastar.')
+        st.success(f'Fuente de datos: {upload.name if upload else default_file.name}.' if data is not None else 'Fuente de datos: perfiles integrados.')
     except Exception as e:
         st.error(f'No se pudo leer el Excel financiero: {e}');st.stop()
     scenario=st.radio('Perfil',list(profiles),index=1)
-    st.caption('Los controles modifican una copia del perfil; no sobrescriben el Excel.')
     st.markdown('---')
     st.caption('Horizonte: 36 meses · Serverless AWS · Escenarios financieros, no proveedores.')
     if st.button('Restaurar escenario'):
@@ -52,7 +51,6 @@ def widget(row):
 
 if view=='Parámetros':
     st.subheader(f'Parámetros · {scenario}')
-    st.caption('Ajusta las entradas y pulsa Recalcular simulación para aplicar los cambios.')
     with st.form('ajustes_'+token+scenario):
         with st.expander('Ajustes principales · demanda, automatización y presupuesto',expanded=True):
             cols=st.columns(3)
@@ -69,7 +67,7 @@ if view=='Parámetros':
     if apply:
         try:validate(params);st.session_state[state_key]=dict(params)
         except ValueError as e:st.error(str(e))
-        else:st.success('Parámetros aplicados. Abre Resultados para consultar la simulación.')
+        else:st.success('Escenario actualizado.')
 
     st.stop()
 p=st.session_state[state_key];r=evaluate(p);d=r['calcs'];f=pd.DataFrame(r['flow']);
@@ -126,7 +124,6 @@ with t2:
     st.subheader('Desglose económico del horizonte')
     breakdown={'Inversión inicial económica':d['capex_econ'],'Nómina residual':f.labor.sum(),'Fijos cloud y soporte humano':f.fixed.sum(),'Variables y capacidad caliente':f.variable.sum(),'Custodia acumulada':f.storage.sum(),'Capacitación recurrente':f.training.sum()}
     cost_df=pd.DataFrame({'Partida':list(breakdown),'COP':list(breakdown.values())})
-    st.caption('Pasa el cursor por cualquier punto de la fila dentro de la gráfica para consultar el valor, incluso cuando la barra sea pequeña o cero.')
     a,b=st.columns([3,2])
     with a:mostrar_grafica(px.bar(cost_df,x='COP',y='Partida',orientation='h',title='Costo económico por partida'),horizontal=True)
     with b:mostrar_grafica(px.pie(cost_df,names='Partida',values='COP',hole=.45,title='Composición del TCO económico'))
