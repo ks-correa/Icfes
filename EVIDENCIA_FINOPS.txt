@@ -1,7 +1,7 @@
-Fecha UTC: 2026-11-19T03:34:32.436165+00:00
+Fecha UTC: 2026-11-24T00:38:14.086253+00:00
 Excel SHA-256: ce9727b029393742ad006b9bbca26115d7bdd1989c41bc4a961e5747935c8df3
-modelo.py SHA-256: 87f2692286af5ca5b298da8c3c7886fcd994c0e62e51503a9b0773f739c8e678
-app.py SHA-256: 858bae67d8141893dbc58d8b2237ef1f1d49377f46ccfb12b54864c4f75d18d1
+modelo.py SHA-256: 7bfe9ad2997f57ed1301cce9f2d6a009a141e8fb2344394655e750241c41a27c
+app.py SHA-256: c306bd1f33b751ae240e240629385e8811ed27d17775404ab3df459dec3e1687
 Contraste: fórmulas calculadas y guardadas en el libro frente a evaluación Python; no solo entradas.
 
 test_alerts (test_modelo.FinOpsTest.test_alerts) ... ok
@@ -20,13 +20,13 @@ test_validation (test_modelo.FinOpsTest.test_validation) ... ok
 test_workbook_inputs (test_modelo.FinOpsTest.test_workbook_inputs) ... ok
 
 ----------------------------------------------------------------------
-Ran 14 tests in 0.032s
+Ran 14 tests in 0.034s
 
 OK
 
 Contraste Excel-Python: 2046/2046 coincidencias; 0 diferencias.
-AppTest perfil Optimista: OK, 32 indicadores.
-AppTest perfil Base: OK, 32 indicadores.
-AppTest perfil Pesimista: OK, 32 indicadores.
+AppTest perfil Optimista: OK, 31 indicadores.
+AppTest perfil Base: OK, 31 indicadores.
+AppTest perfil Pesimista: OK, 31 indicadores.
 AppTest vista Parámetros: OK.
 RESULTADO: APROBADO
