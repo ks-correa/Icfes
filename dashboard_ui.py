@@ -4,7 +4,7 @@ import streamlit as st
 
 
 def mostrar_guia_metricas():
-    with st.expander('Qué significa cada métrica y cada gráfica'):
+    with st.expander('Definiciones y alcance del modelo'):
         st.markdown((Path(__file__).parent / 'GUIA_METRICAS.md').read_text(encoding='utf-8'))
 
 

@@ -30,7 +30,7 @@ with st.sidebar:
         st.error(f'No se pudo leer el Excel financiero: {e}');st.stop()
     scenario=st.radio('Perfil',list(profiles),index=1)
     st.markdown('---')
-    st.caption('Horizonte: 36 meses · Serverless AWS · Escenarios financieros, no proveedores.')
+    st.caption('Horizonte: 36 meses · Arquitectura serverless AWS')
     if st.button('Restaurar escenario'):
         for key in list(st.session_state):
             if key.startswith('fin_'):del st.session_state[key]
@@ -118,7 +118,7 @@ with t1:
     mostrar_grafica(fig)
     mostrar_grafica(px.bar(pd.DataFrame({'Alternativa':['Manual','Económico','Caja'],'TCO':[r['manual'],r['econ'],r['cash']]}),x='Alternativa',y='TCO',color='Alternativa',title='TCO a 36 meses',color_discrete_sequence=['#64748b','#2563eb','#d97706']))
     st.caption('Mes 0: inversión inicial. Se cargan nómina y demanda durante los meses de convocatoria, mientras la infraestructura fija se mantiene 12 meses/año.')
-    with st.expander('Ver detalle mensual'):
+    with st.expander('Flujo mensual'):
         mostrar_tabla(f.rename(columns={'month':'Mes','active':'Convocatoria activa','loads':'Cargas','stock':'GB custodiados','manual':'Manual','econ':'OpEx económico','cash':'OpEx caja','bal_e':'Acumulado económico','bal_c':'Acumulado caja'})[['Mes','Convocatoria activa','Cargas','GB custodiados','Manual','OpEx económico','OpEx caja','Acumulado económico','Acumulado caja']],hide_index=True,width='stretch')
 with t2:
     st.subheader('Desglose económico del horizonte')
@@ -152,7 +152,7 @@ with t3:
 with t4:
     st.subheader('Capacidad residual')
     if d['staff_r']>p['review_min']:st.warning(f"Se requieren {d['staff_r']} revisores, por encima del objetivo de {p['review_min']}.")
-    else:st.success(f"Dotación objetivo de {p['review_min']} revisores suficiente bajo los supuestos agregados; validar colas en piloto.")
+    else:st.success(f"Dotación objetivo de {p['review_min']} revisores suficiente según el dimensionamiento agregado.")
     st.write('Riesgo evitado a tres años (sensibilidad):',cop(r['risk_avoided']),'· ROI ajustado:',pct(r['risk_roi']))
     mostrar_tabla(pd.DataFrame([{'Función':name,'Casos/ciclo':d['cases_'+k],'Personas mínimas':d['staff_'+k]} for k,name in [('r','Revisión'),('a','Atención'),('c','Contabilidad')]]),hide_index=True,width='stretch')
     st.write('Nómina económica anual:',cop(d['labor']),'· Nómina atribuible en caja:',cop(d['cash_labor']))
@@ -165,7 +165,7 @@ with t4:
     mostrar_tabla(pd.DataFrame(comp),hide_index=True,width='stretch')
     mostrar_grafica(px.bar(pd.DataFrame(comp),x='Perfil',y=['Manual','TCO económico','TCO caja'],barmode='group',title='Comparación de escenarios a 36 meses'))
     mostrar_grafica(px.bar(pd.DataFrame({'Función':['Validación / revisión','Atención','Contabilidad*'],'As-Is':[p['manual_v'],p['manual_a'],0],'To-Be':[d['staff_r'],d['staff_a'],d['staff_c']]}),x='Función',y=['As-Is','To-Be'],barmode='group',title='Dotación por función'),tipo='personas')
-    st.caption('*El personal contable no está incluido en la línea base laboral del pliego; cero no significa que el operador carezca de Contabilidad.')
+    st.caption('*Contabilidad: personal excluido de la línea base laboral del pliego. El valor cero representa esta exclusión del cálculo.')
 with t5:
     st.download_button('Descargar flujo mensual CSV',f.to_csv(index=False).encode('utf-8-sig'),file_name='Flujo_ICFES.csv',mime='text/csv')
     st.download_button('Descargar parámetros CSV',pd.DataFrame([{'Clave':k,'Valor':v} for k,v in p.items()]).to_csv(index=False).encode('utf-8-sig'),file_name='Parametros_ICFES.csv',mime='text/csv')

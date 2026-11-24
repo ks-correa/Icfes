@@ -1,4 +1,4 @@
-# Guía de métricas
+# Definiciones y alcance del modelo
 
 Los indicadores principales usan la misma base económica a 36 meses, en millones de COP:
 
@@ -15,4 +15,4 @@ Los indicadores principales usan la misma base económica a 36 meses, en millone
 - Alertas 48: aspirantes únicos × prevalencia × elegibilidad, limitadas por evaluaciones administrativas.
 - WhatsApp principal: utilidad por ronda, autenticación, marketing opcional, respuestas facturables y eventual BSP. SES complementario.
 - Riesgo evitado: diferencia entre pérdidas esperadas anuales × 3; cero en los perfiles, sin respaldo cuantitativo. ROI ajustado separado.
-- Capacidad: dimensionamiento agregado y factor de concentración, no simulación de colas. Dos revisores mínimos; refuerzo si es necesario.
+- Capacidad: dimensionamiento agregado con factor de concentración y mínimo de dos revisores. La dotación depende de la demanda y la capacidad estimadas; el modelo no incluye simulación de colas.
